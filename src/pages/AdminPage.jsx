@@ -18,6 +18,10 @@ export default function AdminPage() {
   const loadData = async () => {
     setErr('')
 
+<<<<<<< HEAD
+=======
+    // 1) Словарь пользователей: { [id]: email }
+>>>>>>> b39d2c660b74f8caf4e5e21c64ab04850425293e
     const { data: users, error: usersErr } = await supabase
       .from('users')
       .select('id,email')
@@ -31,6 +35,10 @@ export default function AdminPage() {
       setEmailById(map)
     }
 
+<<<<<<< HEAD
+=======
+    // 2) Все склады (без embed!)
+>>>>>>> b39d2c660b74f8caf4e5e21c64ab04850425293e
     const { data: wh, error: whErr } = await supabase
       .from('warehouses')
       .select('*')
@@ -73,7 +81,13 @@ export default function AdminPage() {
           {(warehouses || []).map((w) => (
             <tr key={w.id} className="text-center border-b">
               <td className="p-2 border">{w.name}</td>
+<<<<<<< HEAD
               <td className="p-2 border">{emailById[w.user_id] || w.user_id}</td>
+=======
+              <td className="p-2 border">
+                {emailById[w.user_id] || w.user_id}
+              </td>
+>>>>>>> b39d2c660b74f8caf4e5e21c64ab04850425293e
               <td className="p-2 border">{w.is_public ? 'Да' : 'Нет'}</td>
               <td className="p-2 border">
                 <button
