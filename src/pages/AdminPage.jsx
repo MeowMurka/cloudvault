@@ -4,23 +4,53 @@ import { supabase } from '../supabase/client'
 export default function AdminPage() {
   const [session, setSession] = useState(null)
   const [warehouses, setWarehouses] = useState([])
+  const [emailById, setEmailById] = useState({})
+  const [err, setErr] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
   }, [])
 
   useEffect(() => {
-    if (session) loadAllWarehouses()
+    if (session) loadData()
   }, [session])
 
-  const loadAllWarehouses = async () => {
-    const { data } = await supabase.from('warehouses').select('*, users(email)')
-    setWarehouses(data)
+  const loadData = async () => {
+    setErr('')
+
+    const { data: users, error: usersErr } = await supabase
+      .from('users')
+      .select('id,email')
+    if (usersErr) {
+      console.error(usersErr)
+      setErr(`Ошибка загрузки пользователей: ${usersErr.message}`)
+      setEmailById({})
+    } else {
+      const map = {}
+      ;(users || []).forEach(u => { map[u.id] = u.email })
+      setEmailById(map)
+    }
+
+    const { data: wh, error: whErr } = await supabase
+      .from('warehouses')
+      .select('*')
+    if (whErr) {
+      console.error(whErr)
+      setErr(prev => prev || `Ошибка загрузки складов: ${whErr.message}`)
+      setWarehouses([])
+    } else {
+      setWarehouses(wh || [])
+    }
   }
 
   const deleteWarehouse = async (id) => {
-    await supabase.from('warehouses').delete().eq('id', id)
-    loadAllWarehouses()
+    setErr('')
+    const { error } = await supabase.from('warehouses').delete().eq('id', id)
+    if (error) {
+      console.error(error)
+      setErr(`Ошибка удаления: ${error.message}`)
+    }
+    await loadData()
   }
 
   if (!session) return <p>Пожалуйста, войдите как администратор.</p>
@@ -28,6 +58,8 @@ export default function AdminPage() {
   return (
     <div>
       <h2 className="text-xl mb-4">Админ-панель</h2>
+      {err && <div className="mb-3 p-2 bg-red-100 text-red-700 rounded">Ошибка: {err}</div>}
+
       <table className="w-full border">
         <thead>
           <tr className="bg-gray-200">
@@ -38,10 +70,10 @@ export default function AdminPage() {
           </tr>
         </thead>
         <tbody>
-          {warehouses.map((w) => (
+          {(warehouses || []).map((w) => (
             <tr key={w.id} className="text-center border-b">
               <td className="p-2 border">{w.name}</td>
-              <td className="p-2 border">{w.user_id}</td>
+              <td className="p-2 border">{emailById[w.user_id] || w.user_id}</td>
               <td className="p-2 border">{w.is_public ? 'Да' : 'Нет'}</td>
               <td className="p-2 border">
                 <button
@@ -53,6 +85,11 @@ export default function AdminPage() {
               </td>
             </tr>
           ))}
+          {warehouses.length === 0 && (
+            <tr>
+              <td className="p-3 text-center" colSpan={4}>Складов нет</td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
